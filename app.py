@@ -6,40 +6,40 @@ app = Flask(__name__)
 results = []
 
 HTML_TEMPLATE = """<!DOCTYPE html>
-<html lang="en">
+<html lang='en'>
 <head>
-    <meta charset="UTF-8">
+    <meta charset='UTF-8'>
     <title>k4_urlv4</title>
     <style>
-        body {
+        body {{
             background-color: black;
             color: #0f0;
             font-family: monospace;
             padding: 20px;
-        }
-        #banner {
+        }}
+        #banner {{
             text-align: center;
             font-size: 24px;
             color: #0f0;
             text-shadow: 0 0 5px #0f0;
             margin-bottom: 20px;
-        }
-        #terminal {
+        }}
+        #terminal {{
             background-color: #111;
             padding: 10px;
             border: 1px solid #0f0;
             height: 300px;
             overflow-y: auto;
             white-space: pre-wrap;
-        }
-        #results-table {
+        }}
+        #results-table {{
             width: 100%;
             border-collapse: collapse;
-        }
-        #results-table th, #results-table td {
+        }}
+        #results-table th, #results-table td {{
             border: 1px solid #0f0;
             padding: 5px;
-        }
+        }}
     </style>
 </head>
 <body>
@@ -63,44 +63,44 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <div id="terminal"></div>
 
     <script>
-        function start() {
+        function start() {{
             const base_urls = document.getElementById("base-url").value.split("\n").map(x => x.trim()).filter(Boolean);
             const wordlist = document.getElementById("wordlist").value;
             const proxy_mode = document.getElementById("proxy-mode").value;
 
             document.getElementById("terminal").textContent = "[kader11000@k4_urlv4]$ Starting URL guessing...\n";
 
-            fetch("/stream", {
+            fetch("/stream", {{
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ base_urls, wordlist, proxy_mode })
-            }).then(response => {
+                headers: {{ "Content-Type": "application/json" }},
+                body: JSON.stringify({{ base_urls, wordlist, proxy_mode }})
+            }}).then(response => {{
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
-                function read() {
-                    reader.read().then(({ done, value }) => {
+                function read() {{
+                    reader.read().then(({ done, value }) => {{
                         if (done) return;
-                        const chunk = decoder.decode(value, { stream: true });
-                        chunk.trim().split("data: ").forEach(line => {
-                            if (line) {
+                        const chunk = decoder.decode(value, {{ stream: true }});
+                        chunk.trim().split("data: ").forEach(line => {{
+                            if (line) {{
                                 const data = JSON.parse(line);
-                                if (data.done) {
+                                if (data.done) {{
                                     document.getElementById("terminal").textContent += `\nCompleted in ${data.elapsed} seconds`;
                                     return;
-                                }
-                                if (data.status === 200) {
+                                }}
+                                if (data.status === 200) {{
                                     document.getElementById("terminal").textContent += `[+] ${data.url} => ${data.status} [${data.proxy}]\n`;
-                                } else {
+                                }} else {{
                                     document.getElementById("terminal").textContent += `[-] ${data.url} => ${data.status} [${data.proxy}]\n`;
-                                }
-                            }
-                        });
+                                }}
+                            }}
+                        }});
                         read();
-                    });
-                }
+                    }});
+                }}
                 read();
-            });
-        }
+            }});
+        }}
     </script>
 </body>
 </html>"""
@@ -129,29 +129,41 @@ def stream():
                 proxy = proxies[count % len(proxies)] if proxies else "none"
                 guessed_url = base_url.replace("{{var1}}", word)
                 status = 200 if "admin" in guessed_url else 404
-                result = {
+                result = {{
                     "url": guessed_url,
                     "status": status,
                     "proxy": proxy,
                     "base_url": base_url
-                }
+                }}
                 if status == 200:
                     results.append(result)
                 count += 1
                 time.sleep(0.1)
-                yield f"data: {json.dumps(result)}\n\n"
-        yield f"data: {json.dumps({'done': True, 'elapsed': round(time.time() - start_time, 2)})}\n\n"
+                yield f"data: {{json.dumps(result)}}\n\n"
+        yield f"data: {{json.dumps({{'done': True, 'elapsed': round(time.time() - start_time, 2)}})}}\n\n"
 
     return Response(generate(), mimetype='text/event-stream')
 
 @app.route("/results")
 def view_results():
-    html = "<html><head><style>body{background:#111;color:#0f0;font-family:monospace;}table{width:100%;border-collapse:collapse;}td,th{border:1px solid #0f0;padding:5px;}button{margin:10px;padding:5px;}</style></head><body>"
-    html += "<h2>Results - status 200 only</h2><table><tr><th>Base URL</th><th>Guessed URL</th><th>Status</th><th>Proxy</th></tr>"
+    html = """
+    <html><head><style>
+    body {{ background:#111; color:#0f0; font-family:monospace; }}
+    table {{ width:100%; border-collapse:collapse; }}
+    td,th {{ border:1px solid #0f0; padding:5px; }}
+    button {{ margin:10px; padding:5px; }}
+    </style></head><body>
+    <h2>Results - status 200 only</h2>
+    <table><tr><th>Base URL</th><th>Guessed URL</th><th>Status</th><th>Proxy</th></tr>
+    """
     for r in results:
-        html += f"<tr><td>{r['base_url']}</td><td>{r['url']}</td><td>{r['status']}</td><td>{r['proxy']}</td></tr>"
-    html += "</table><br><button onclick='window.location.href="/download-results"'>Download</button>"
-    html += "<button onclick='window.location.href="/"'>Back</button></body></html>"
+        html += f"<tr><td>{{r['base_url']}}</td><td>{{r['url']}}</td><td>{{r['status']}}</td><td>{{r['proxy']}}</td></tr>"
+    html += """
+    </table><br>
+    <button onclick="window.location.href='/download-results'">Download</button>
+    <button onclick="window.location.href='/'">Back</button>
+    </body></html>
+    """
     return html
 
 @app.route("/download-results")
